@@ -54,15 +54,12 @@ export function getMetaCloudCredentials(): MetaCloudCredentials {
     const saved = localStorage.getItem(STORAGE_KEY_META_CLOUD_CREDS);
     if (saved) {
       const parsed = JSON.parse(saved);
-      // If token in localStorage is old or matches default phoneId, keep token synced with latest default
-      if (parsed.phoneId === DEFAULT_META_CLOUD_CREDS.phoneId) {
-        return {
-          ...DEFAULT_META_CLOUD_CREDS,
-          isCloudApiEnabled: parsed.isCloudApiEnabled ?? true,
-          token: DEFAULT_META_CLOUD_CREDS.token,
-        };
+      // Ensure token matches the active fresh DEFAULT_META_CLOUD_CREDS token
+      if (!parsed.token || parsed.token !== DEFAULT_META_CLOUD_CREDS.token) {
+        localStorage.setItem(STORAGE_KEY_META_CLOUD_CREDS, JSON.stringify(DEFAULT_META_CLOUD_CREDS));
+        return DEFAULT_META_CLOUD_CREDS;
       }
-      if (parsed.phoneId && parsed.token) return parsed;
+      return parsed;
     }
   } catch (e) {
     console.error("Failed to load Meta Cloud credentials", e);
