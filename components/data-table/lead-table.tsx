@@ -3,13 +3,17 @@
 import React, { useState } from "react";
 import { Business } from "@/lib/types";
 import { copyToClipboard } from "@/lib/utils";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { WhatsAppActionButton } from "@/components/crm/whatsapp-action-button";
 import {
   Star, Globe, Phone, Mail, MapPin, ExternalLink, Check, Copy, Heart,
-  Download, Layers, Tag, Trash2, ChevronLeft, ChevronRight, Eye, Sparkles
+  Download, Layers, Tag, Trash2, ChevronLeft, ChevronRight, Eye, Sparkles, MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
+
+import { BulkWhatsAppModal } from "@/components/crm/bulk-whatsapp-modal";
 
 interface LeadTableProps {
   businesses: Business[];
@@ -18,6 +22,7 @@ interface LeadTableProps {
   pageSize: number;
   hasNext: boolean;
   onPageChange: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
   onSaveLead: (business: Business) => void;
   onOpenDetails: (business: Business) => void;
   onBulkExport?: (selectedIds: number[]) => void;
@@ -33,6 +38,7 @@ export function LeadTable({
   pageSize,
   hasNext,
   onPageChange,
+  onPageSizeChange,
   onSaveLead,
   onOpenDetails,
   onBulkExport,
@@ -42,6 +48,7 @@ export function LeadTable({
 }: LeadTableProps) {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [bulkWaModalOpen, setBulkWaModalOpen] = useState(false);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -90,6 +97,16 @@ export function LeadTable({
     triggerCopy(addresses, "All Selected Addresses");
   };
 
+  const selectedBusinesses = businesses.filter((b) => selectedIds.includes(b.id));
+
+  const handleBulkWhatsApp = () => {
+    if (selectedBusinesses.length === 0) {
+      triggerCopy(null, "No valid phone numbers in selected leads");
+      return;
+    }
+    setBulkWaModalOpen(true);
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 my-6">
       {/* Floating Notification Toast for Copy actions */}
@@ -99,9 +116,9 @@ export function LeadTable({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 right-6 z-50 bg-indigo-600 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 border border-indigo-400/40 text-xs font-semibold"
+            className="fixed bottom-6 right-6 z-50 bg-[#0F1A3A] text-amber-300 px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 border border-amber-500/40 text-xs font-semibold"
           >
-            <Check className="w-4 h-4 text-emerald-300" />
+            <Check className="w-4 h-4 text-emerald-400" />
             Copied {copiedField} to Clipboard!
           </motion.div>
         )}
@@ -114,16 +131,26 @@ export function LeadTable({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="mb-4 p-3.5 bg-indigo-950/90 border border-indigo-500/40 backdrop-blur-md rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xl"
+            className="mb-4 p-3.5 bg-[#0A1128]/95 border border-amber-500/40 backdrop-blur-md rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-2xl gold-glow"
           >
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">
+              <span className="w-6 h-6 rounded-full bg-amber-400 text-[#0A1128] text-xs font-bold flex items-center justify-center">
                 {selectedIds.length}
               </span>
-              <span className="text-xs font-semibold text-indigo-200">Leads Selected</span>
+              <span className="text-xs font-semibold text-amber-200">Leads Selected</span>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={handleBulkWhatsApp}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-1"
+                title="Send WhatsApp Message to Selected"
+              >
+                <MessageSquare className="w-3.5 h-3.5 mr-1 text-white" /> WhatsApp Selected
+              </Button>
+
               <Button size="sm" variant="secondary" onClick={copySelectedPhones} className="text-xs py-1">
                 <Phone className="w-3.5 h-3.5 text-emerald-400" /> Copy Phones
               </Button>
@@ -183,7 +210,7 @@ export function LeadTable({
                   />
                 </th>
                 <th className="p-3.5 min-w-[200px]">Business Name</th>
-                <th className="p-3.5 min-w-[130px]">Phone Number</th>
+                <th className="p-3.5 min-w-[170px]">Phone / WhatsApp</th>
                 <th className="p-3.5 min-w-[150px]">Website</th>
                 <th className="p-3.5 min-w-[160px]">Email</th>
                 <th className="p-3.5 min-w-[220px]">Address</th>
@@ -191,7 +218,7 @@ export function LeadTable({
                 <th className="p-3.5 min-w-[110px]">Category</th>
                 <th className="p-3.5 min-w-[90px]">Status</th>
                 <th className="p-3.5 min-w-[90px]">AI Score</th>
-                <th className="p-3.5 min-w-[100px] text-right">Actions</th>
+                <th className="p-3.5 min-w-[120px] text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 text-slate-300">
@@ -260,11 +287,13 @@ export function LeadTable({
                         </div>
                       </td>
 
-                      {/* Phone */}
+                      {/* Phone & WhatsApp Action with 4-Message Selector */}
                       <td className="p-3.5">
                         {biz.phone ? (
                           <div className="flex items-center gap-1.5 group">
                             <span className="text-xs font-mono text-slate-300">{biz.phone}</span>
+
+                            {/* Copy Phone */}
                             <button
                               onClick={() => triggerCopy(biz.phone, biz.name + " Phone")}
                               className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-opacity"
@@ -272,6 +301,9 @@ export function LeadTable({
                             >
                               <Copy className="w-3 h-3" />
                             </button>
+
+                            {/* WhatsApp Action Button with 4-message popover */}
+                            <WhatsAppActionButton phone={biz.phone} business={biz} variant="badge" />
                           </div>
                         ) : (
                           <span className="text-slate-600 text-xs italic">N/A</span>
@@ -381,6 +413,10 @@ export function LeadTable({
                       {/* Actions */}
                       <td className="p-3.5 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {biz.phone && (
+                            <WhatsAppActionButton phone={biz.phone} business={biz} variant="icon" />
+                          )}
+
                           <Button
                             size="sm"
                             variant={isSaved ? "primary" : "secondary"}
@@ -413,11 +449,31 @@ export function LeadTable({
           </table>
         </div>
 
+
+
         {/* Footer Pagination Bar */}
         <div className="p-4 bg-slate-900/90 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
-          <div>
-            Showing Page <span className="font-bold text-white">{currentPage}</span> — Total{" "}
-            <span className="font-bold text-indigo-400">{totalResults}</span> Businesses
+          <div className="flex items-center gap-4">
+            <div>
+              Showing Page <span className="font-bold text-white">{currentPage}</span> — Total{" "}
+              <span className="font-bold text-amber-400">{totalResults}</span> Businesses
+            </div>
+
+            {onPageSizeChange && (
+              <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                <span>Show:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                  className="bg-[#0A1128] border border-amber-500/30 text-amber-200 font-semibold rounded-lg px-2 py-1 focus:outline-none focus:border-amber-400"
+                >
+                  <option value={20}>20 leads / page</option>
+                  <option value={50}>50 leads / page</option>
+                  <option value={100}>100 leads / page</option>
+                  <option value={250}>250 leads / page</option>
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -445,6 +501,13 @@ export function LeadTable({
           </div>
         </div>
       </div>
+
+      {/* 1-Click WhatsApp Sequencer Modal */}
+      <BulkWhatsAppModal
+        isOpen={bulkWaModalOpen}
+        onClose={() => setBulkWaModalOpen(false)}
+        businesses={selectedBusinesses}
+      />
     </div>
   );
 }

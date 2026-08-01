@@ -33,9 +33,18 @@ export function SearchBar({ onSearch, onOpenFilters, isLoading, activeFilterCoun
     if (e) e.preventDefault();
     if (!query.trim()) return;
 
+    let targetCity = city.trim();
+    if (query.toLowerCase().includes(" in ")) {
+      const extracted = query.split(/ in /i).pop()?.trim();
+      if (extracted) {
+        targetCity = extracted;
+        setCity(extracted);
+      }
+    }
+
     onSearch({
       query: query.trim(),
-      city: city.trim() || undefined,
+      city: targetCity || undefined,
       state: state.trim() || undefined,
       radius: radius,
       pincode: pincode.trim() || undefined,
@@ -72,13 +81,13 @@ export function SearchBar({ onSearch, onOpenFilters, isLoading, activeFilterCoun
           {/* Main Search Input Box */}
           <div className="relative flex items-center gap-2">
             <div className="relative flex-1 flex items-center">
-              <Search className="absolute left-4 w-5 h-5 text-indigo-400" />
+              <Search className="absolute left-4 w-5 h-5 text-amber-400" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search any business (e.g., Dentists in Delhi, Restaurants in Mumbai)..."
-                className="w-full pl-12 pr-4 py-3.5 bg-slate-900/90 border border-slate-700/80 rounded-xl text-white placeholder-slate-400 text-sm sm:text-base focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                className="w-full pl-12 pr-4 py-3.5 bg-[#0A1128]/90 border border-amber-500/30 rounded-xl text-white placeholder-slate-400 text-sm sm:text-base focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
               />
             </div>
 
@@ -86,10 +95,10 @@ export function SearchBar({ onSearch, onOpenFilters, isLoading, activeFilterCoun
               type="button"
               variant="secondary"
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="hidden sm:flex items-center gap-1.5 py-3 px-3.5 border-slate-700 hover:bg-slate-800 text-slate-300"
+              className="hidden sm:flex items-center gap-1.5 py-3 px-3.5 border-amber-500/30 hover:bg-[#121E42] text-amber-200"
               title="Search Options"
             >
-              <Building2 className="w-4 h-4 text-slate-400" />
+              <Building2 className="w-4 h-4 text-amber-400" />
               <span className="text-xs">Options</span>
             </Button>
 
@@ -97,12 +106,12 @@ export function SearchBar({ onSearch, onOpenFilters, isLoading, activeFilterCoun
               type="button"
               variant="secondary"
               onClick={onOpenFilters}
-              className="flex items-center gap-1.5 py-3 px-3.5 border-slate-700 hover:bg-slate-800 text-slate-300 relative"
+              className="flex items-center gap-1.5 py-3 px-3.5 border-amber-500/30 hover:bg-[#121E42] text-amber-200 relative"
             >
-              <SlidersHorizontal className="w-4 h-4 text-indigo-400" />
+              <SlidersHorizontal className="w-4 h-4 text-amber-400" />
               <span className="hidden sm:inline text-xs">Filters</span>
               {activeFilterCount > 0 && (
-                <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center -mr-1">
+                <span className="w-5 h-5 rounded-full bg-amber-400 text-[#0A1128] text-[10px] font-extrabold flex items-center justify-center -mr-1">
                   {activeFilterCount}
                 </span>
               )}
@@ -112,9 +121,9 @@ export function SearchBar({ onSearch, onOpenFilters, isLoading, activeFilterCoun
               type="submit"
               size="lg"
               isLoading={isLoading}
-              className="py-3.5 px-6 font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-500/25 border-0"
+              className="py-3.5 px-6 font-bold bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-[#0A1128] shadow-lg shadow-amber-500/25 border-0"
             >
-              <Sparkles className="w-4 h-4 text-cyan-300" />
+              <Sparkles className="w-4 h-4 text-[#0A1128]" />
               Search
             </Button>
           </div>

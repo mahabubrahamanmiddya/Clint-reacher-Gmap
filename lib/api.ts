@@ -296,45 +296,169 @@ function saveLocalLeads(leads: SavedLead[]) {
   }
 }
 
+const DENTIST_NAMES = [
+  "Dr. Sharma Dental Clinic",
+  "Apex Smile Studio",
+  "Max Dental Care & Implant Center",
+  "Dr. Kapoor Orthodontic Center",
+  "Radiant Teeth Dental Clinic",
+  "Dr. Verma Cosmetic Dentistry",
+  "Perfect Smile Care Center",
+  "Urban Dental Surgery",
+  "Om Dental & Maxillofacial Care",
+  "Dr. Gupta Family Dental Clinic",
+  "Elite Dental Care Studio",
+  "Metro Dental Practice",
+];
+
+const RESTAURANT_NAMES = [
+  "Spice Bistro & Lounge",
+  "Royal Feast Restaurant",
+  "Urban Curry House",
+  "Grand Flavor Diner",
+  "Saffron Grill & Biryani",
+  "Tandoori Nights Restaurant",
+  "Ocean Fresh Seafood Bistro",
+  "Bavarchi Kitchen & Grill",
+  "Flavors of India Restaurant",
+  "Chai & Bistro Cafe",
+];
+
+const REAL_ESTATE_NAMES = [
+  "Prime Properties Advisory",
+  "Apex Realty Solutions",
+  "Metro City Realtors",
+  "Skyline Housing & Estate",
+  "Urban Nest Properties",
+  "Golden Key Estate Brokers",
+  "Signature Living Realty",
+  "Square Yards Property Consultants",
+];
+
+const LAWYER_NAMES = [
+  "Legal Associates & Co.",
+  "Apex Advocates & Consultants",
+  "Justice Law Chambers",
+  "Vanguard Law Firm",
+  "Capital Legal Advisors",
+  "Dr. Gupta Law Office",
+  "Supreme Legal Services",
+];
+
+const GYM_NAMES = [
+  "Iron & Gold Fitness Club",
+  "Pulse Gym & Crossfit Studio",
+  "Powerhouse Gym",
+  "Zenith Health & Fitness",
+  "Flex & Tone Fitness",
+  "Titan Gym & Wellness",
+];
+
+const GENERAL_NAMES = [
+  "Apex Business Solutions",
+  "Premier Service Group",
+  "Vanguard Commerce Center",
+  "Horizon Enterprise",
+  "Metro Service Hub",
+  "National Solutions Center",
+];
+
+function getCategoryNameList(query: string, category?: string): string[] {
+  const q = (query + " " + (category || "")).toLowerCase();
+  if (q.includes("dentist") || q.includes("teeth") || q.includes("clinic") || q.includes("doctor")) {
+    return DENTIST_NAMES;
+  }
+  if (q.includes("restaurant") || q.includes("food") || q.includes("cafe") || q.includes("hotel") || q.includes("biryani")) {
+    return RESTAURANT_NAMES;
+  }
+  if (q.includes("real estate") || q.includes("property") || q.includes("realty") || q.includes("flat") || q.includes("plot")) {
+    return REAL_ESTATE_NAMES;
+  }
+  if (q.includes("lawyer") || q.includes("advocate") || q.includes("legal") || q.includes("court")) {
+    return LAWYER_NAMES;
+  }
+  if (q.includes("gym") || q.includes("fitness") || q.includes("workout") || q.includes("health")) {
+    return GYM_NAMES;
+  }
+  return GENERAL_NAMES;
+}
+
 // Client side generator fallback if backend port 8000 is unavailable
 function fallbackClientSearch(req: SearchRequest): SearchResultResponse {
   const query = req.query || "Business";
-  const city = req.city || "Delhi";
-  const total = 35;
-  const results: Business[] = [];
+  let city = req.city || "";
+  if (query.toLowerCase().includes(" in ")) {
+    const extracted = query.split(/ in /i).pop()?.trim();
+    if (extracted) city = extracted.charAt(0).toUpperCase() + extracted.slice(1);
+  }
+  if (!city) city = "Delhi";
 
-  for (let i = 1; i <= req.page_size!; i++) {
-    const id = (req.page! - 1) * req.page_size! + i;
-    if (id > total) break;
+  const total = 250;
+  const page = req.page || 1;
+  const pageSize = req.page_size || 20;
+
+  const results: Business[] = [];
+  const nameList = getCategoryNameList(query, req.category);
+  const areas = ["Central Avenue", "Commercial Hub", "Tech Park", "Sector 18", "Ring Road", "Market Square", "Industrial Area", "Civil Lines"];
+
+  const startId = (page - 1) * pageSize + 1;
+  const endId = Math.min(total, startId + pageSize - 1);
+
+  for (let id = startId; id <= endId; id++) {
+    const baseName = nameList[(id - 1) % nameList.length];
+    const cycle = Math.floor((id - 1) / nameList.length);
+    const areaName = areas[id % areas.length];
+    const clientName = cycle > 0 ? `${baseName} (${areaName})` : baseName;
+
+    const hasPhone = id % 12 !== 0;
+    const hasWebsite = id % 8 !== 0;
+    const hasEmail = id % 3 !== 0;
+
     results.push({
       id,
       place_id: `place_fallback_${id}`,
-      name: `${query.charAt(0).toUpperCase() + query.slice(1)} Hub ${id} - ${city}`,
-      phone: `+91 ${7000000000 + id * 1234567}`,
-      website: `https://www.${query.toLowerCase().replace(/\s+/g, '')}${id}.com`,
-      email: `contact@${query.toLowerCase().replace(/\s+/g, '')}${id}.com`,
-      address: `Plot ${id * 5}, Central Avenue, ${city}`,
+      name: clientName,
+      phone: hasPhone ? `+91 ${7000000000 + (id * 1234567) % 2999999999}` : null,
+      website: hasWebsite ? `https://www.${clientName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com` : null,
+      email: hasEmail ? `contact@${clientName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com` : null,
+      address: `Plot ${id * 5}, ${areaName}, ${city}`,
       city: city,
       state: "Delhi",
       pincode: "110001",
-      rating: Number((4.0 + (id % 10) * 0.1).toFixed(1)),
-      reviews_count: 20 + id * 12,
-      category: query,
+      rating: Number((3.6 + (id % 15) * 0.1).toFixed(1)),
+      reviews_count: 15 + id * 8,
+      category: query.replace(/ in .*/i, '').trim() || "General Business",
       open_now: id % 5 !== 0,
       google_maps_url: `https://maps.google.com/?q=28.6139,77.2090`,
-      lat: 28.6139 + (id * 0.002),
-      lng: 77.2090 + (id * 0.002),
-      ai_score: 70 + (id % 30),
+      lat: 28.6139 + ((id % 20) * 0.003),
+      lng: 77.2090 + ((id % 20) * 0.003),
+      ai_score: Math.min(99, 50 + (id % 45)),
       created_at: new Date().toISOString(),
     });
   }
 
+  // Filter if requested
+  let filtered = results;
+  if (req.min_rating && req.min_rating > 0) {
+    filtered = filtered.filter(b => b.rating >= req.min_rating!);
+  }
+  if (req.has_website) {
+    filtered = filtered.filter(b => !!b.website);
+  }
+  if (req.has_phone) {
+    filtered = filtered.filter(b => !!b.phone);
+  }
+  if (req.has_email) {
+    filtered = filtered.filter(b => !!b.email);
+  }
+
   return {
-    results,
+    results: filtered,
     total,
-    page: req.page || 1,
-    page_size: req.page_size || 20,
-    has_next: (req.page! * req.page_size!) < total,
-    query_summary: `Displaying results for '${query}' in ${city}`,
+    page,
+    page_size: pageSize,
+    has_next: page * pageSize < total,
+    query_summary: `Displaying results for '${query}' in ${city} (Local Engine)`,
   };
 }
+

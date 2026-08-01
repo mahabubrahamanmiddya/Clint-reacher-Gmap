@@ -83,6 +83,11 @@ export default function HomePage() {
     handleExecuteSearch(updatedReq);
   };
 
+  const handlePageSizeChange = (newPageSize: number) => {
+    const updatedReq = { ...currentReq, page: 1, page_size: newPageSize };
+    handleExecuteSearch(updatedReq);
+  };
+
   const handleSaveLead = async (biz: Business) => {
     await saveLead(biz.id, "New", "General");
     if (!savedLeadIds.includes(biz.id)) {
@@ -123,9 +128,9 @@ export default function HomePage() {
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold"
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold shadow-md gold-border"
         >
-          <Sparkles className="w-4 h-4 text-cyan-300 animate-spin" />
+          <Sparkles className="w-4 h-4 text-amber-400 animate-spin" />
           Official API Powered B2B Lead Intelligence Engine
         </motion.div>
 
@@ -154,6 +159,7 @@ export default function HomePage() {
         pageSize={currentReq.page_size || 20}
         hasNext={hasNextPage}
         onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
         onSaveLead={handleSaveLead}
         onOpenDetails={(biz) => setSelectedDetailsBiz(biz)}
         onBulkExport={(ids) => {

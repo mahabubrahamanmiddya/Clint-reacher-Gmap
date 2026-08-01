@@ -7,7 +7,7 @@ import { Sparkles, Mail, Lock, LogIn, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
-  const router = Router = useRouter();
+  const router = useRouter();
   const [email, setEmail] = useState("demo@leadx.ai");
   const [password, setPassword] = useState("password123");
   const [isLoading, setIsLoading] = useState(false);

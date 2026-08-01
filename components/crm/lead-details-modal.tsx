@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { Business, Note, Tag as TagType } from "@/lib/types";
 import { copyToClipboard } from "@/lib/utils";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { WhatsAppActionButton } from "@/components/crm/whatsapp-action-button";
 import {
   X, Star, Globe, Phone, Mail, MapPin, ExternalLink, Copy, Sparkles,
   MessageSquare, Tag, Plus, Check, ShieldAlert, Zap, Clock
@@ -95,6 +97,10 @@ export function LeadDetailsModal({
             </div>
 
             <div className="flex items-center gap-2">
+              {business.phone && (
+                <WhatsAppActionButton phone={business.phone} business={business} variant="button" />
+              )}
+
               <Button
                 variant={isSaved ? "primary" : "secondary"}
                 onClick={() => onSaveLead(business)}
@@ -148,7 +154,12 @@ export function LeadDetailsModal({
                       <span className="text-slate-400 flex items-center gap-2">
                         <Phone className="w-4 h-4 text-emerald-400" /> Phone
                       </span>
-                      <span className="text-white font-mono">{business.phone || "N/A"}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-mono">{business.phone || "N/A"}</span>
+                        {business.phone && (
+                          <WhatsAppActionButton phone={business.phone} business={business} variant="badge" />
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between">

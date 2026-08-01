@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { Business } from "@/lib/types";
-import { MapPin, Phone, Globe, Star } from "lucide-react";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { MapPin, Phone, Globe, Star, MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface LeadMapProps {
@@ -93,9 +94,19 @@ export function LeadMap({ businesses, centerLat = 28.6139, centerLng = 77.2090, 
 
             <div className="pt-2 space-y-2 text-xs border-t border-slate-800">
               {selectedBiz.phone && (
-                <div className="flex items-center gap-2 text-slate-300 font-mono">
-                  <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                  {selectedBiz.phone}
+                <div className="flex items-center justify-between text-slate-300 font-mono">
+                  <span className="flex items-center gap-2">
+                    <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                    {selectedBiz.phone}
+                  </span>
+                  <button
+                    onClick={() => sendWhatsAppMessage(selectedBiz.phone, selectedBiz)}
+                    className="p-1 px-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 font-bold text-[10px] flex items-center gap-1 transition-all"
+                    title="Send WhatsApp Message"
+                  >
+                    <MessageSquare className="w-3 h-3" />
+                    WhatsApp
+                  </button>
                 </div>
               )}
               {selectedBiz.website && (
@@ -109,18 +120,31 @@ export function LeadMap({ businesses, centerLat = 28.6139, centerLng = 77.2090, 
             </div>
           </div>
 
-          {selectedBiz.google_maps_url && (
-            <a
-              href={selectedBiz.google_maps_url}
-              target="_blank"
-              rel="noreferrer"
-              className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md"
-            >
-              Open in Google Maps
-            </a>
-          )}
+          <div className="space-y-2">
+            {selectedBiz.phone && (
+              <button
+                onClick={() => sendWhatsAppMessage(selectedBiz.phone, selectedBiz)}
+                className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md"
+              >
+                <MessageSquare className="w-4 h-4" />
+                Send WhatsApp Message
+              </button>
+            )}
+
+            {selectedBiz.google_maps_url && (
+              <a
+                href={selectedBiz.google_maps_url}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md"
+              >
+                Open in Google Maps
+              </a>
+            )}
+          </div>
         </div>
       )}
     </div>
   );
 }
+

@@ -4,14 +4,18 @@ import React, { useState, useEffect } from "react";
 import { SavedLead, LeadList } from "@/lib/types";
 import { getSavedLeads, updateLeadStatus, deleteLead, bulkUpdateStatus } from "@/lib/api";
 import { copyToClipboard, getStatusColor } from "@/lib/utils";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { WhatsAppActionButton } from "@/components/crm/whatsapp-action-button";
 import {
   Database, Download, Plus, Star, Phone, Globe, Mail, MapPin, ExternalLink,
-  Trash2, Copy, Tag, Check, Filter, Layers, LayoutGrid, List
+  Trash2, Copy, Tag, Check, Filter, Layers, LayoutGrid, List, MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExportModal } from "@/components/crm/export-modal";
 import { LeadDetailsModal } from "@/components/crm/lead-details-modal";
+import { WhatsAppTemplateModal } from "@/components/crm/whatsapp-template-modal";
+import { BulkWhatsAppModal } from "@/components/crm/bulk-whatsapp-modal";
 import { motion, AnimatePresence } from "framer-motion";
 
 const PIPELINE_STAGES = ["New", "Contacted", "Interested", "Not Interested", "Closed"];
@@ -23,6 +27,8 @@ export function SavedLeadsPage() {
   const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [waModalOpen, setWaModalOpen] = useState(false);
+  const [bulkWaModalOpen, setBulkWaModalOpen] = useState(false);
   const [detailsBiz, setDetailsBiz] = useState<any>(null);
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
@@ -69,7 +75,7 @@ export function SavedLeadsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 right-6 z-50 bg-indigo-600 text-white px-4 py-2 rounded-xl shadow-2xl flex items-center gap-2 text-xs font-bold"
+            className="fixed bottom-6 right-6 z-50 bg-[#0F1A3A] border border-amber-500/40 text-amber-300 px-4 py-2 rounded-xl shadow-2xl flex items-center gap-2 text-xs font-bold"
           >
             <Check className="w-4 h-4 text-emerald-300" /> Copied {copiedText}!
           </motion.div>
@@ -77,18 +83,28 @@ export function SavedLeadsPage() {
       </AnimatePresence>
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-amber-500/20">
         <div>
           <div className="flex items-center gap-2">
-            <Database className="w-6 h-6 text-indigo-400" />
+            <Database className="w-6 h-6 text-amber-400" />
             <h1 className="text-2xl font-bold text-white">CRM Saved Lead Pipeline</h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Manage your saved lead lists, pipeline status stages, notes timeline, and 1-click bulk exports.
+            Manage your saved lead lists, pipeline status stages, notes timeline, and 1-click WhatsApp client outreach.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
+          {/* WhatsApp Template Config Button */}
+          <Button
+            variant="secondary"
+            onClick={() => setWaModalOpen(true)}
+            className="bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs"
+            title="Edit Custom WhatsApp Outreach Messages (1 to 4)"
+          >
+            <MessageSquare className="w-4 h-4 text-emerald-400" /> WhatsApp 4-Msg Config
+          </Button>
+
           {/* View Toggle */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-1 flex items-center gap-1">
             <button
@@ -111,8 +127,17 @@ export function SavedLeadsPage() {
 
           <Button
             variant="primary"
+            onClick={() => setBulkWaModalOpen(true)}
+            className="bg-amber-400 hover:bg-amber-300 text-[#0A1128] font-bold text-xs shadow-md"
+            title="Start 1-Click Sequential WhatsApp Auto Outreach"
+          >
+            <MessageSquare className="w-4 h-4 fill-[#0A1128]" /> 1-Click Auto Outreach ({filteredLeads.length})
+          </Button>
+
+          <Button
+            variant="secondary"
             onClick={() => setExportModalOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-500 text-xs"
+            className="text-xs"
           >
             <Download className="w-4 h-4" /> Export All ({filteredLeads.length})
           </Button>
@@ -203,9 +228,11 @@ export function SavedLeadsPage() {
                               <button
                                 onClick={() => triggerCopy(b.phone!, "Phone")}
                                 className="p-1 hover:text-white text-slate-500"
+                                title="Copy Phone"
                               >
                                 <Copy className="w-3 h-3" />
                               </button>
+                              <WhatsAppActionButton phone={b.phone} business={b} variant="badge" />
                             </div>
                           )}
                           {b.website && (
@@ -245,15 +272,21 @@ export function SavedLeadsPage() {
                         </td>
 
                         <td className="p-3.5 text-right">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDeleteLead(lead.id)}
-                            className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 p-1.5"
-                            title="Delete Lead"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            {b.phone && (
+                              <WhatsAppActionButton phone={b.phone} business={b} variant="icon" />
+                            )}
+
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDeleteLead(lead.id)}
+                              className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 p-1.5"
+                              title="Delete Lead"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -303,7 +336,13 @@ export function SavedLeadsPage() {
                         <p className="text-[11px] text-slate-400 line-clamp-1">{b.address}</p>
 
                         <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[10px]">
-                          <span className="text-purple-300 font-mono">{b.phone || "No phone"}</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-purple-300 font-mono truncate max-w-[90px]">{b.phone || "No phone"}</span>
+                            {b.phone && (
+                              <WhatsAppActionButton phone={b.phone} business={b} variant="icon" />
+                            )}
+                          </div>
+
                           <select
                             value={lead.status}
                             onChange={(e) => handleStatusChange(lead.id, e.target.value)}
@@ -324,6 +363,7 @@ export function SavedLeadsPage() {
         </div>
       )}
 
+
       {/* Profile Modal */}
       <LeadDetailsModal
         business={detailsBiz}
@@ -340,8 +380,23 @@ export function SavedLeadsPage() {
         selectedLeadIds={selectedIds}
         allLeads={filteredLeads}
       />
+
+      {/* WhatsApp Template Modal */}
+      <WhatsAppTemplateModal
+        isOpen={waModalOpen}
+        onClose={() => setWaModalOpen(false)}
+      />
+
+      {/* 1-Click WhatsApp Sequencer Modal */}
+      <BulkWhatsAppModal
+        isOpen={bulkWaModalOpen}
+        onClose={() => setBulkWaModalOpen(false)}
+        businesses={filteredLeads.map((l) => l.business)}
+        onLeadProcessed={(bizId, newStatus) => handleStatusChange(bizId, newStatus)}
+      />
     </div>
   );
 }
 
 export default SavedLeadsPage;
+
