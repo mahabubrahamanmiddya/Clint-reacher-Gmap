@@ -153,14 +153,19 @@ export function SingleLeadDripModal({
     setCloudStatusMsg(`⚡ Sending Step ${activeIdx + 1} of 4 in background...`);
     let res = await sendMetaCloudMessageDirect(targetPhone, activeStep.formattedMessage);
 
+    let isSandboxFallback = false;
     // Sandbox Test Mode: If recipient not in allowed list, send to verified test phone 918391959941
     if (!res.success && (res.error?.includes("131030") || res.error?.includes("allowed list"))) {
-      setCloudStatusMsg(`🧪 Test Sandbox: Delivering Step ${activeIdx + 1} to verified number (918391959941)...`);
+      isSandboxFallback = true;
       res = await sendMetaCloudMessageDirect("918391959941", activeStep.formattedMessage);
     }
 
     if (res.success) {
-      setCloudStatusMsg(`✅ Delivered Step ${activeIdx + 1} to WhatsApp! (ID: ${res.messageId})`);
+      if (isSandboxFallback) {
+        setCloudStatusMsg(`🧪 Sandbox Test Mode: Meta restricted sending to ${targetPhone}. Delivered to your verified test phone (918391959941).`);
+      } else {
+        setCloudStatusMsg(`✅ Delivered Step ${activeIdx + 1} to ${targetPhone}! (ID: ${res.messageId})`);
+      }
       setSteps((prev) =>
         prev.map((s, idx) => (idx === activeIdx ? { ...s, status: "sent" } : s))
       );
@@ -168,7 +173,7 @@ export function SingleLeadDripModal({
         onStatusUpdated(business.id, "Contacted");
       }
     } else {
-      setCloudStatusMsg(`❌ Direct Send Status: ${res.error || "Completed"}`);
+      setCloudStatusMsg(`❌ Meta API Notice: ${res.error || "Completed"}`);
       setSteps((prev) =>
         prev.map((s, idx) => (idx === activeIdx ? { ...s, status: "sent" } : s))
       );
