@@ -39,19 +39,27 @@ export interface MetaCloudCredentials {
   isCloudApiEnabled: boolean;
 }
 
+export const DEFAULT_META_CLOUD_CREDS: MetaCloudCredentials = {
+  phoneId: "1137486026112189",
+  token: "EAANGVdmYP0QBSHJ5VgulCPiUPT41y88BS4rYhaNApZBt1N2vc8l142ghVBZB4rAP8lcl5ZCqlqSLCjg0RmlYikqwQGbpr1aUxNUZBeP1FviThe07t3ZAsmCCxzXzhACsFdyBchr23U0zQkDB87iPMMNdbvvFBIokzelKH0mC3NIbneaDLNusn4wZCDlcw7UImUvr497XeyAUK4LWDSeZBjq3HUiGWyibB0ueqIOAlpzouBvXU6deobsF61I6Xn0LRahMbrJr1Q8SsnTjuctuUBt",
+  accountId: "1499988068175778",
+  isCloudApiEnabled: true,
+};
+
 export function getMetaCloudCredentials(): MetaCloudCredentials {
   if (typeof window === "undefined") {
-    return { phoneId: "", token: "", accountId: "", isCloudApiEnabled: false };
+    return DEFAULT_META_CLOUD_CREDS;
   }
   try {
     const saved = localStorage.getItem(STORAGE_KEY_META_CLOUD_CREDS);
     if (saved) {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      if (parsed.phoneId && parsed.token) return parsed;
     }
   } catch (e) {
     console.error("Failed to load Meta Cloud credentials", e);
   }
-  return { phoneId: "", token: "", accountId: "", isCloudApiEnabled: false };
+  return DEFAULT_META_CLOUD_CREDS;
 }
 
 export function saveMetaCloudCredentials(creds: Partial<MetaCloudCredentials>) {
