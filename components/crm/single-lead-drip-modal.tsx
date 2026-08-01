@@ -8,8 +8,11 @@ import {
   generateWhatsAppUrl,
   buildWhatsAppDirectUrl,
   formatPhoneForWhatsApp,
+  getMetaCloudCredentials,
+  sendMetaCloudMessageDirect,
   WhatsAppTemplateItem,
 } from "@/lib/whatsapp";
+import { MetaCloudSettingsModal } from "@/components/crm/meta-cloud-settings-modal";
 import {
   MessageSquare,
   Play,
@@ -25,6 +28,8 @@ import {
   Edit2,
   Check,
   Zap,
+  Settings,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -57,12 +62,17 @@ export function SingleLeadDripModal({
   const [countdown, setCountdown] = useState<number>(3);
   const [customPhone, setCustomPhone] = useState<string>("");
   const [isEditingPhone, setIsEditingPhone] = useState<boolean>(false);
+  const [isCloudApiMode, setIsCloudApiMode] = useState<boolean>(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState<boolean>(false);
+  const [cloudStatusMsg, setCloudStatusMsg] = useState<string>("");
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (isOpen && business) {
       const templates = getWhatsAppTemplates();
+      const metaCreds = getMetaCloudCredentials();
+      setIsCloudApiMode(metaCreds.isCloudApiEnabled && !!metaCreds.phoneId && !!metaCreds.token);
       setCustomPhone(business.phone || "");
       setIsEditingPhone(false);
 
@@ -130,24 +140,44 @@ export function SingleLeadDripModal({
   const sentCount = steps.filter((s) => s.status === "sent").length;
   const progressPercent = totalSteps > 0 ? Math.round((sentCount / totalSteps) * 100) : 0;
 
-  const triggerSendCurrentStep = () => {
+  const triggerSendCurrentStep = async () => {
     const activeIdx = currentStepIdxRef.current;
     const activeStep = steps[activeIdx];
     if (!activeStep) return;
 
-    const targetPhone = customPhone || business.phone;
-    const url = buildWhatsAppDirectUrl(targetPhone, activeStep.formattedMessage);
+    const targetPhone = customPhone || business.phone || "";
+    const metaCreds = getMetaCloudCredentials();
 
-    if (url) {
-      // Use named target window to reuse the opened tab without popup block
-      window.open(url, "LeadXWhatsAppTab");
+    // Check if Meta Cloud API is enabled & configured
+    if (isCloudApiMode || (metaCreds.isCloudApiEnabled && metaCreds.phoneId && metaCreds.token)) {
+      setCloudStatusMsg(`⚡ Sending Step ${activeIdx + 1} via Meta Cloud API (Background)...`);
+      const res = await sendMetaCloudMessageDirect(targetPhone, activeStep.formattedMessage);
 
-      setSteps((prev) =>
-        prev.map((s, idx) => (idx === activeIdx ? { ...s, status: "sent" } : s))
-      );
-
-      if (onStatusUpdated) {
-        onStatusUpdated(business.id, "Contacted");
+      if (res.success) {
+        setCloudStatusMsg(`✅ Delivered Step ${activeIdx + 1}! ID: ${res.messageId}`);
+        setSteps((prev) =>
+          prev.map((s, idx) => (idx === activeIdx ? { ...s, status: "sent" } : s))
+        );
+        if (onStatusUpdated) {
+          onStatusUpdated(business.id, "Contacted");
+        }
+      } else {
+        setCloudStatusMsg(`❌ Meta Cloud API Error: ${res.error}`);
+        // Fallback to web link if cloud API failed
+        const url = buildWhatsAppDirectUrl(targetPhone, activeStep.formattedMessage);
+        if (url) window.open(url, "LeadXWhatsAppTab");
+      }
+    } else {
+      // Standard Web Link
+      const url = buildWhatsAppDirectUrl(targetPhone, activeStep.formattedMessage);
+      if (url) {
+        window.open(url, "LeadXWhatsAppTab");
+        setSteps((prev) =>
+          prev.map((s, idx) => (idx === activeIdx ? { ...s, status: "sent" } : s))
+        );
+        if (onStatusUpdated) {
+          onStatusUpdated(business.id, "Contacted");
+        }
       }
     }
 
@@ -248,24 +278,54 @@ export function SingleLeadDripModal({
               </div>
             </div>
 
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSettingsModalOpen(true)}
+                className="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-400 text-amber-300 hover:text-[#0A1128] border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                title="Configure Meta WhatsApp Cloud API (Zero-Click Send)"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                <span>Meta API Settings</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsAutoSending(false);
+                  onClose();
+                }}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Cloud API vs Web Banner */}
+          <div className="px-5 py-2.5 bg-gradient-to-r from-amber-500/10 via-[#0F1A3A] to-amber-500/10 border-b border-amber-500/20 text-[11px] text-amber-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <span>
+                {isCloudApiMode ? (
+                  <strong className="text-emerald-400">⚡ Meta WhatsApp Cloud API Active: Zero-Click Server Send (No Tabs Opened!)</strong>
+                ) : (
+                  <span><strong>Web Mode:</strong> WhatsApp Web pre-fills message text in chat. Press <kbd className="px-1 py-0.5 bg-amber-400 text-[#0A1128] font-bold rounded">Enter ↵</kbd> in WhatsApp Web.</span>
+                )}
+              </span>
+            </div>
+
             <button
-              onClick={() => {
-                setIsAutoSending(false);
-                onClose();
-              }}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              onClick={() => setSettingsModalOpen(true)}
+              className="text-[10px] text-amber-400 hover:underline font-bold"
             >
-              <X className="w-5 h-5" />
+              {isCloudApiMode ? "Manage Keys" : "Switch to Zero-Click API →"}
             </button>
           </div>
 
-          {/* WhatsApp Web Tip Alert Banner */}
-          <div className="px-5 py-2.5 bg-amber-500/10 border-b border-amber-500/20 text-[11px] text-amber-200 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-400 flex-shrink-0" />
-            <span>
-              <strong>Note:</strong> WhatsApp Web pre-fills message text in chat. Press <kbd className="px-1 py-0.5 bg-amber-400 text-[#0A1128] font-bold rounded">Enter ↵</kbd> inside WhatsApp Web to send!
-            </span>
-          </div>
+          {cloudStatusMsg && (
+            <div className="px-5 py-2 bg-[#0F1A3A] border-b border-amber-500/30 text-xs font-mono text-amber-300">
+              {cloudStatusMsg}
+            </div>
+          )}
 
           {/* Business Lead Info Box */}
           <div className="p-4 bg-[#0F1A3A]/70 border-b border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -515,6 +575,15 @@ export function SingleLeadDripModal({
           </div>
         </motion.div>
       </div>
+
+      <MetaCloudSettingsModal
+        isOpen={settingsModalOpen}
+        onClose={() => {
+          setSettingsModalOpen(false);
+          const metaCreds = getMetaCloudCredentials();
+          setIsCloudApiMode(metaCreds.isCloudApiEnabled && !!metaCreds.phoneId && !!metaCreds.token);
+        }}
+      />
     </AnimatePresence>
   );
 }

@@ -30,6 +30,85 @@ export const DEFAULT_WHATSAPP_TEMPLATES: WhatsAppTemplateItem[] = [
 ];
 
 export const STORAGE_KEY_WHATSAPP_TEMPLATES = "leadx_whatsapp_templates_v2";
+export const STORAGE_KEY_META_CLOUD_CREDS = "leadx_meta_cloud_creds_v1";
+
+export interface MetaCloudCredentials {
+  phoneId: string;
+  token: string;
+  accountId?: string;
+  isCloudApiEnabled: boolean;
+}
+
+export function getMetaCloudCredentials(): MetaCloudCredentials {
+  if (typeof window === "undefined") {
+    return { phoneId: "", token: "", accountId: "", isCloudApiEnabled: false };
+  }
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_META_CLOUD_CREDS);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error("Failed to load Meta Cloud credentials", e);
+  }
+  return { phoneId: "", token: "", accountId: "", isCloudApiEnabled: false };
+}
+
+export function saveMetaCloudCredentials(creds: Partial<MetaCloudCredentials>) {
+  if (typeof window === "undefined") return;
+  const current = getMetaCloudCredentials();
+  const updated = { ...current, ...creds };
+  localStorage.setItem(STORAGE_KEY_META_CLOUD_CREDS, JSON.stringify(updated));
+  return updated;
+}
+
+export async function sendMetaCloudMessageDirect(
+  phone: string,
+  messageText: string
+): Promise<{ success: boolean; error?: string; messageId?: string }> {
+  const creds = getMetaCloudCredentials();
+  const phoneId = creds.phoneId;
+  const token = creds.token;
+
+  if (!phoneId || !token) {
+    return {
+      success: false,
+      error: "Meta WhatsApp Cloud API credentials missing. Please enter Phone ID and Access Token.",
+    };
+  }
+
+  const cleanPhone = phone.replace(/\D/g, "");
+  const targetPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+
+  try {
+    const response = await fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: targetPhone,
+        type: "text",
+        text: { preview_url: false, body: messageText },
+      }),
+    });
+
+    const resData = await response.json();
+    if (response.ok && resData.messages?.[0]?.id) {
+      return { success: true, messageId: resData.messages[0].id };
+    } else {
+      return {
+        success: false,
+        error: resData.error?.message || "Meta Cloud API Error",
+      };
+    }
+  } catch (e: any) {
+    return { success: false, error: e.message || "Network request error" };
+  }
+}
 
 export function getWhatsAppTemplates(): WhatsAppTemplateItem[] {
   if (typeof window === "undefined") return DEFAULT_WHATSAPP_TEMPLATES;
