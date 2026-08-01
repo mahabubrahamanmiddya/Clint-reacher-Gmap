@@ -43,7 +43,7 @@ export const DEFAULT_META_CLOUD_CREDS: MetaCloudCredentials = {
   phoneId: "1137486026112189",
   token: "EAANGVdmYP0QBSHJ5VgulCPiUPT41y88BS4rYhaNApZBt1N2vc8l142ghVBZB4rAP8lcl5ZCqlqSLCjg0RmlYikqwQGbpr1aUxNUZBeP1FviThe07t3ZAsmCCxzXzhACsFdyBchr23U0zQkDB87iPMMNdbvvFBIokzelKH0mC3NIbneaDLNusn4wZCDlcw7UImUvr497XeyAUK4LWDSeZBjq3HUiGWyibB0ueqIOAlpzouBvXU6deobsF61I6Xn0LRahMbrJr1Q8SsnTjuctuUBt",
   accountId: "1499988068175778",
-  isCloudApiEnabled: true,
+  isCloudApiEnabled: false,
 };
 
 export function getMetaCloudCredentials(): MetaCloudCredentials {

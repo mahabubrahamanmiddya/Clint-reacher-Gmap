@@ -73,7 +73,7 @@ export function SingleLeadDripModal({
     if (isOpen && business) {
       const templates = getWhatsAppTemplates();
       const metaCreds = getMetaCloudCredentials();
-      setIsCloudApiMode(metaCreds.isCloudApiEnabled && !!metaCreds.phoneId && !!metaCreds.token);
+      setIsCloudApiMode(metaCreds.isCloudApiEnabled);
       setCustomPhone(business.phone || "");
       setIsEditingPhone(false);
 
