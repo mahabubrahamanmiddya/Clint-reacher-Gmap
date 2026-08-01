@@ -89,22 +89,51 @@ export async function sendMetaCloudMessageDirect(
   const targetPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
 
   try {
-    const response = await fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
+    // 1st Attempt: Try sending text payload
+    const textPayload = {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: targetPhone,
+      type: "text",
+      text: { preview_url: false, body: messageText },
+    };
+
+    let response = await fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        recipient_type: "individual",
-        to: targetPhone,
-        type: "text",
-        text: { preview_url: false, body: messageText },
-      }),
+      body: JSON.stringify(textPayload),
     });
 
-    const resData = await response.json();
+    let resData = await response.json();
+    if (response.ok && resData.messages?.[0]?.id) {
+      return { success: true, messageId: resData.messages[0].id };
+    }
+
+    // 2nd Attempt: If Meta requires a template for business-initiated conversation, send hello_world template
+    const templatePayload = {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: targetPhone,
+      type: "template",
+      template: {
+        name: "hello_world",
+        language: { code: "en_US" }
+      }
+    };
+
+    response = await fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(templatePayload),
+    });
+
+    resData = await response.json();
     if (response.ok && resData.messages?.[0]?.id) {
       return { success: true, messageId: resData.messages[0].id };
     } else {
