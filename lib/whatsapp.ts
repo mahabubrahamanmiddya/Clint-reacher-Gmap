@@ -54,6 +54,14 @@ export function getMetaCloudCredentials(): MetaCloudCredentials {
     const saved = localStorage.getItem(STORAGE_KEY_META_CLOUD_CREDS);
     if (saved) {
       const parsed = JSON.parse(saved);
+      // If token in localStorage is old or matches default phoneId, keep token synced with latest default
+      if (parsed.phoneId === DEFAULT_META_CLOUD_CREDS.phoneId) {
+        return {
+          ...DEFAULT_META_CLOUD_CREDS,
+          isCloudApiEnabled: parsed.isCloudApiEnabled ?? true,
+          token: DEFAULT_META_CLOUD_CREDS.token,
+        };
+      }
       if (parsed.phoneId && parsed.token) return parsed;
     }
   } catch (e) {
