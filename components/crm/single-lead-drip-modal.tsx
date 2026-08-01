@@ -328,20 +328,25 @@ export function SingleLeadDripModal({
                   setIsCloudApiMode(newMode);
                   saveMetaCloudCredentials({ isCloudApiEnabled: newMode });
                 }}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border shadow-md transition-all flex items-center gap-1.5 ${
                   isCloudApiMode
-                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                    : "bg-slate-800 text-slate-300 border-slate-700 hover:text-white"
+                    ? "bg-emerald-500 text-slate-950 border-emerald-400 font-extrabold shadow-emerald-900/50"
+                    : "bg-gradient-to-r from-amber-400 to-yellow-400 text-[#0A1128] border-amber-300 font-extrabold shadow-amber-900/50"
                 }`}
+                title="Click to switch between Background API and WhatsApp Web Mode"
               >
-                {isCloudApiMode ? "Mode: ⚡ Zero-Tab API" : "Mode: 🌐 Web Tab"}
+                {isCloudApiMode ? (
+                  <>⚡ Mode: Zero-Tab API</>
+                ) : (
+                  <>🌐 Mode: WhatsApp Web (Click to Switch)</>
+                )}
               </button>
 
               <button
                 onClick={() => setSettingsModalOpen(true)}
-                className="text-[10px] text-amber-400 hover:underline font-bold"
+                className="text-[11px] text-amber-400 hover:underline font-bold px-2 py-1 bg-slate-900 rounded-lg border border-slate-800"
               >
-                Manage Keys ⚙️
+                Settings ⚙️
               </button>
             </div>
           </div>
