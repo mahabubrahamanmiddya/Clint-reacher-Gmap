@@ -9,6 +9,7 @@ import {
   buildWhatsAppDirectUrl,
   formatPhoneForWhatsApp,
   getMetaCloudCredentials,
+  saveMetaCloudCredentials,
   sendMetaCloudMessageDirect,
   WhatsAppTemplateItem,
 } from "@/lib/whatsapp";
@@ -149,12 +150,12 @@ export function SingleLeadDripModal({
     const metaCreds = getMetaCloudCredentials();
 
     // Check if Meta Cloud API is enabled & configured
-    if (isCloudApiMode || (metaCreds.isCloudApiEnabled && metaCreds.phoneId && metaCreds.token)) {
+    if (isCloudApiMode && metaCreds.phoneId && metaCreds.token) {
       setCloudStatusMsg(`⚡ Sending Step ${activeIdx + 1} via Meta Cloud API (Background)...`);
       const res = await sendMetaCloudMessageDirect(targetPhone, activeStep.formattedMessage);
 
       if (res.success) {
-        setCloudStatusMsg(`✅ Delivered Step ${activeIdx + 1}! ID: ${res.messageId}`);
+        setCloudStatusMsg(`✅ Delivered Step ${activeIdx + 1} to WhatsApp! ID: ${res.messageId}`);
         setSteps((prev) =>
           prev.map((s, idx) => (idx === activeIdx ? { ...s, status: "sent" } : s))
         );
@@ -162,13 +163,13 @@ export function SingleLeadDripModal({
           onStatusUpdated(business.id, "Contacted");
         }
       } else {
-        setCloudStatusMsg(`❌ Meta Cloud API Error: ${res.error}`);
-        // Fallback to web link if cloud API failed
-        const url = buildWhatsAppDirectUrl(targetPhone, activeStep.formattedMessage);
-        if (url) window.open(url, "LeadXWhatsAppTab");
+        setCloudStatusMsg(`❌ Meta Cloud API Notice: ${res.error}. (To send background messages in Test Mode, add recipient number in Meta Console).`);
+        setSteps((prev) =>
+          prev.map((s, idx) => (idx === activeIdx ? { ...s, status: "skipped" } : s))
+        );
       }
     } else {
-      // Standard Web Link
+      // Standard Web Link Mode (Only when Web Mode is selected)
       const url = buildWhatsAppDirectUrl(targetPhone, activeStep.formattedMessage);
       if (url) {
         window.open(url, "LeadXWhatsAppTab");
@@ -301,24 +302,42 @@ export function SingleLeadDripModal({
           </div>
 
           {/* Cloud API vs Web Banner */}
-          <div className="px-5 py-2.5 bg-gradient-to-r from-amber-500/10 via-[#0F1A3A] to-amber-500/10 border-b border-amber-500/20 text-[11px] text-amber-200 flex items-center justify-between">
+          <div className="px-5 py-2.5 bg-gradient-to-r from-amber-500/10 via-[#0F1A3A] to-amber-500/10 border-b border-amber-500/20 text-[11px] text-amber-200 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-amber-400 flex-shrink-0" />
               <span>
                 {isCloudApiMode ? (
-                  <strong className="text-emerald-400">⚡ Meta WhatsApp Cloud API Active: Zero-Click Server Send (No Tabs Opened!)</strong>
+                  <strong className="text-emerald-400">⚡ Meta WhatsApp Cloud API Mode Active (Zero Tabs Opened!)</strong>
                 ) : (
-                  <span><strong>Web Mode:</strong> WhatsApp Web pre-fills message text in chat. Press <kbd className="px-1 py-0.5 bg-amber-400 text-[#0A1128] font-bold rounded">Enter ↵</kbd> in WhatsApp Web.</span>
+                  <span><strong>Web Mode:</strong> Opens WhatsApp Web tab. Press <kbd className="px-1 py-0.5 bg-amber-400 text-[#0A1128] font-bold rounded">Enter ↵</kbd> in WhatsApp Web.</span>
                 )}
               </span>
             </div>
 
-            <button
-              onClick={() => setSettingsModalOpen(true)}
-              className="text-[10px] text-amber-400 hover:underline font-bold"
-            >
-              {isCloudApiMode ? "Manage Keys" : "Switch to Zero-Click API →"}
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Toggle Mode Button */}
+              <button
+                onClick={() => {
+                  const newMode = !isCloudApiMode;
+                  setIsCloudApiMode(newMode);
+                  saveMetaCloudCredentials({ isCloudApiEnabled: newMode });
+                }}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors ${
+                  isCloudApiMode
+                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                    : "bg-slate-800 text-slate-300 border-slate-700 hover:text-white"
+                }`}
+              >
+                {isCloudApiMode ? "Mode: ⚡ Zero-Tab API" : "Mode: 🌐 Web Tab"}
+              </button>
+
+              <button
+                onClick={() => setSettingsModalOpen(true)}
+                className="text-[10px] text-amber-400 hover:underline font-bold"
+              >
+                Manage Keys ⚙️
+              </button>
+            </div>
           </div>
 
           {cloudStatusMsg && (
