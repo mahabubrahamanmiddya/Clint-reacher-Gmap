@@ -41,9 +41,9 @@ export interface MetaCloudCredentials {
 
 export const DEFAULT_META_CLOUD_CREDS: MetaCloudCredentials = {
   phoneId: "1137486026112189",
-  token: "EAANGVdmYP0QBSHJ5VgulCPiUPT41y88BS4rYhaNApZBt1N2vc8l142ghVBZB4rAP8lcl5ZCqlqSLCjg0RmlYikqwQGbpr1aUxNUZBeP1FviThe07t3ZAsmCCxzXzhACsFdyBchr23U0zQkDB87iPMMNdbvvFBIokzelKH0mC3NIbneaDLNusn4wZCDlcw7UImUvr497XeyAUK4LWDSeZBjq3HUiGWyibB0ueqIOAlpzouBvXU6deobsF61I6Xn0LRahMbrJr1Q8SsnTjuctuUBt",
+  token: "EAANGVdmYP0QBSCahdRjPNU3MoFaCmxWAe3Q5jxZBdp3pmG8TLF5grIKdOauD7j755F8ZAEmmYJhV3L7ZCk1XoPNwXevJCSMsWqlgzLK8MuQYiLKSHcW7H7mN5HS6RQQn6cGQSNVU0jTXYchQ5d4rQSRVZAT77AozlmrdTz406ZC5OqoXf4Ke3Cisp1XMTfPKki30IpDceoMEm2pZBYq9c2ooolpZAjZCVJjfEYCUXzwJjG3RFboRumTQkTTfX9nkFG2rsmvkm2IpUYdKVkOWtmYPvwZDZD",
   accountId: "1499988068175778",
-  isCloudApiEnabled: false,
+  isCloudApiEnabled: true,
 };
 
 export function getMetaCloudCredentials(): MetaCloudCredentials {
