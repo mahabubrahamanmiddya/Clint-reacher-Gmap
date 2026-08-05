@@ -25,7 +25,17 @@ export function SavedLeadsPage() {
   const [selectedList, setSelectedList] = useState<string>("All");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("clint_reacher_saved_leads_selected_ids");
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [waModalOpen, setWaModalOpen] = useState(false);
   const [bulkWaModalOpen, setBulkWaModalOpen] = useState(false);
@@ -35,6 +45,16 @@ export function SavedLeadsPage() {
   useEffect(() => {
     fetchLeads();
   }, [selectedStatus, selectedList]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("clint_reacher_saved_leads_selected_ids", JSON.stringify(selectedIds));
+      } catch (e) {
+        console.error("Failed to save selected leads to localStorage", e);
+      }
+    }
+  }, [selectedIds]);
 
   const fetchLeads = async () => {
     const data = await getSavedLeads(

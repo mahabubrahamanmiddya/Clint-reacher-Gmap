@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Business } from "@/lib/types";
 import { copyToClipboard } from "@/lib/utils";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
 import { WhatsAppActionButton } from "@/components/crm/whatsapp-action-button";
 import {
   Star, Globe, Phone, Mail, MapPin, ExternalLink, Check, Copy, Heart,
-  Download, Layers, Tag, Trash2, ChevronLeft, ChevronRight, Eye, Sparkles, MessageSquare
+  Download, Layers, Tag, Trash2, ChevronLeft, ChevronRight, Eye, Sparkles, MessageSquare, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,9 +46,29 @@ export function LeadTable({
   savedBusinessIds = [],
   isLoading = false,
 }: LeadTableProps) {
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("clint_reacher_selected_lead_ids");
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [bulkWaModalOpen, setBulkWaModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("clint_reacher_selected_lead_ids", JSON.stringify(selectedIds));
+      } catch (e) {
+        console.error("Failed to save selected leads to localStorage", e);
+      }
+    }
+  }, [selectedIds]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -138,6 +158,13 @@ export function LeadTable({
                 {selectedIds.length}
               </span>
               <span className="text-xs font-semibold text-amber-200">Leads Selected</span>
+              <button
+                onClick={() => setSelectedIds([])}
+                className="ml-2 text-slate-400 hover:text-red-400 text-xs underline flex items-center gap-1"
+                title="Deselect All"
+              >
+                <X className="w-3.5 h-3.5" /> Clear
+              </button>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
